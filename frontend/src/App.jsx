@@ -4,6 +4,7 @@ import StudenteCard from "./components/StudenteCard";
 import ModaleAggiungiStudente from "./components/ModaleAggiungiStudente";
 import ModalePresenza from "./components/ModalePresenza";
 import ModaleStorico from "./components/ModaleStorico";
+import ModaleModificaStudente from "./components/ModaleModificaStudente";
 import "./App.css";
 
 const API = "http://localhost:3001/api";
@@ -12,6 +13,7 @@ export default function App() {
   const [studenti, setStudenti] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
+  const [modaleModifica, setModaleModifica] = useState(null);
 
   // Stato modali
   const [modaleAggiungi, setModaleAggiungi] = useState(false);
@@ -32,7 +34,21 @@ export default function App() {
       setLoading(false);
     }
   };
+  
+  const modificaStudente = async (id, dati) => {
+    const res = await fetch(`${API}/studenti/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dati),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.errore);
+    }
+    await caricaStudenti();
+  };
 
+    
   useEffect(() => {
     caricaStudenti();
   }, []);
@@ -177,6 +193,7 @@ export default function App() {
                 onPresenza={() => setModalePresenza(s)}
                 onStorico={() => setModaleStorico(s)}
                 onAggiungiOre={(ore) => aggiungiOre(s.id, ore)}
+                onModifica={() => setModaleModifica(s)}
               />
             ))}
           </div>
@@ -197,6 +214,14 @@ export default function App() {
           onClose={() => setModalePresenza(null)}
           onIngresso={registraIngresso}
           onUscita={registraUscita}
+        />
+      )}
+
+      {modaleModifica && (
+        <ModaleModificaStudente
+          studente={modaleModifica}
+          onClose={() => setModaleModifica(null)}
+          onSalva={modificaStudente}
         />
       )}
 

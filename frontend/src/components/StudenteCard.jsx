@@ -7,6 +7,7 @@ export default function StudenteCard({
   onPresenza,
   onStorico,
   onAggiungiOre,
+  onModifica,
 }) {
   const [aggiungiOreMode, setAggiungiOreMode] = useState(false);
   const [oreInput, setOreInput] = useState("");
@@ -45,13 +46,22 @@ export default function StudenteCard({
             {studente.tipo_pagamento === "abbonamento" ? "📅 Abbonamento" : "⏱ A ore"}
           </span>
         </div>
-        <button
-          className="btn-icon btn-danger"
-          onClick={onElimina}
-          title="Elimina studente"
-        >
-          🗑
-        </button>
+        <div style={{ display: "flex", gap: "4px", marginLeft: "auto" }}>
+          <button
+            className="btn-icon"
+            onClick={onModifica}
+            title="Modifica tipo pagamento"
+          >
+            ✏️
+          </button>
+          <button
+            className="btn-icon btn-danger"
+            onClick={onElimina}
+            title="Elimina studente"
+          >
+            🗑
+          </button>
+        </div>
       </div>
 
       {/* Ore residue (solo per studenti "ore") */}

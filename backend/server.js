@@ -287,7 +287,40 @@ app.post("/api/presenze/uscita", (req, res) => {
     res.status(500).json({ errore: "Errore nella registrazione dell'uscita" });
   }
 });
+// PUT /api/studenti/:id - Modifica tipo pagamento di uno studente
+app.put("/api/studenti/:id", (req, res) => {
+  const { id } = req.params;
+  const { tipo_pagamento, ore_iniziali } = req.body;
 
+  if (!["abbonamento", "ore"].includes(tipo_pagamento)) {
+    return res.status(400).json({ errore: "Tipo pagamento non valido" });
+  }
+
+  try {
+    const studente = db.prepare("SELECT * FROM studenti WHERE id = ?").get(id);
+    if (!studente) {
+      return res.status(404).json({ errore: "Studente non trovato" });
+    }
+
+    // Se passa da ore ad abbonamento, azzera le ore residue
+    // Se passa da abbonamento a ore, imposta le ore iniziali fornite
+    let nuoveOre = studente.ore_residue;
+    if (tipo_pagamento === "abbonamento") {
+      nuoveOre = 0;
+    } else if (studente.tipo_pagamento === "abbonamento" && tipo_pagamento === "ore") {
+      nuoveOre = ore_iniziali || 0;
+    }
+
+    db.prepare(
+      "UPDATE studenti SET tipo_pagamento = ?, ore_residue = ? WHERE id = ?"
+    ).run(tipo_pagamento, nuoveOre, id);
+
+    const aggiornato = db.prepare("SELECT * FROM studenti WHERE id = ?").get(id);
+    res.json(aggiornato);
+  } catch (err) {
+    res.status(500).json({ errore: "Errore nella modifica dello studente" });
+  }
+});
 // ============================================================
 // AVVIO SERVER
 // ============================================================
