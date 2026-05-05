@@ -1,7 +1,18 @@
 // src/components/ModalePresenza.jsx
 import { useState } from "react";
 
+// Restituisce la data e ora corrente nel formato richiesto dall'input datetime-local
+// es: "2024-01-15T08:30"
+function orarioAdesso() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
 export default function ModalePresenza({ studente, onClose, onIngresso, onUscita }) {
+  const [orarioIngresso, setOrarioIngresso] = useState(orarioAdesso());
+  const [orarioUscita, setOrarioUscita] = useState(orarioAdesso());
+  const [usaOrarioPersonalizzato, setUsaOrarioPersonalizzato] = useState(false);
   const [messaggio, setMessaggio] = useState("");
   const [errore, setErrore] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,7 +31,8 @@ export default function ModalePresenza({ studente, onClose, onIngresso, onUscita
     setMessaggio("");
     setLoading(true);
     try {
-      const data = await onIngresso(studente.id);
+      const orario = usaOrarioPersonalizzato ? orarioIngresso : null;
+      const data = await onIngresso(studente.id, orario);
       setMessaggio(`✅ Ingresso registrato alle ${formatOra(data.ingresso)}`);
       setRisultato("ingresso");
     } catch (e) {
@@ -35,7 +47,8 @@ export default function ModalePresenza({ studente, onClose, onIngresso, onUscita
     setMessaggio("");
     setLoading(true);
     try {
-      const data = await onUscita(studente.id);
+      const orario = usaOrarioPersonalizzato ? orarioUscita : null;
+      const data = await onUscita(studente.id, orario);
       const ore = data.presenza.ore_consumate;
       setMessaggio(
         `✅ Uscita registrata alle ${formatOra(data.presenza.uscita)}. ` +
@@ -61,6 +74,7 @@ export default function ModalePresenza({ studente, onClose, onIngresso, onUscita
         </div>
 
         <div className="modale-body">
+          {/* Info studente */}
           <div className="studente-info-box">
             <div className="avatar avatar-lg">
               {studente.nome[0]}{studente.cognome[0]}
@@ -75,26 +89,56 @@ export default function ModalePresenza({ studente, onClose, onIngresso, onUscita
             </div>
           </div>
 
+          {/* Toggle orario personalizzato */}
+          {!risultato && (
+            <label className="toggle-row">
+              <input
+                type="checkbox"
+                checked={usaOrarioPersonalizzato}
+                onChange={(e) => setUsaOrarioPersonalizzato(e.target.checked)}
+              />
+              <span>Inserisci orario manualmente</span>
+            </label>
+          )}
+
+          {/* Campi orario personalizzato */}
+          {!risultato && usaOrarioPersonalizzato && (
+            <div className="orari-grid">
+              <div className="form-group">
+                <label>🟢 Orario ingresso</label>
+                <input
+                  type="datetime-local"
+                  className="input"
+                  value={orarioIngresso}
+                  onChange={(e) => setOrarioIngresso(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>🔴 Orario uscita</label>
+                <input
+                  type="datetime-local"
+                  className="input"
+                  value={orarioUscita}
+                  onChange={(e) => setOrarioUscita(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Avviso ore esaurite */}
           {studente.tipo_pagamento === "ore" && studente.ore_residue <= 0 && (
             <div className="alert alert-warning">
               ⚠️ Attenzione: questo studente ha esaurito il credito ore!
             </div>
           )}
 
+          {/* Bottoni azione */}
           {!risultato && (
             <div className="presenza-buttons">
-              <button
-                className="btn btn-ingresso"
-                onClick={handleIngresso}
-                disabled={loading}
-              >
+              <button className="btn-ingresso" onClick={handleIngresso} disabled={loading}>
                 🟢 Registra Ingresso
               </button>
-              <button
-                className="btn btn-uscita"
-                onClick={handleUscita}
-                disabled={loading}
-              >
+              <button className="btn-uscita" onClick={handleUscita} disabled={loading}>
                 🔴 Registra Uscita
               </button>
             </div>

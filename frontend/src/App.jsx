@@ -93,7 +93,7 @@ export default function App() {
     await caricaStudenti();
   };
 
-  // Registra ingresso
+ // Registra ingresso
   const registraIngresso = async (studente_id) => {
     const res = await fetch(`${API}/presenze/ingresso`, {
       method: "POST",

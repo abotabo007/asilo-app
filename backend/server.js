@@ -174,119 +174,115 @@ app.get("/api/presenze/:studente_id", (req, res) => {
 
 // POST /api/presenze/ingresso - Registra ingresso
 app.post("/api/presenze/ingresso", (req, res) => {
-  const { studente_id } = req.body;
+  const { studente_id, orario_personalizzato } = req.body; // ← aggiungi orario_personalizzato
 
   if (!studente_id) {
     return res.status(400).json({ errore: "ID studente obbligatorio" });
   }
 
   try {
-    const studente = db
-      .prepare("SELECT * FROM studenti WHERE id = ?")
-      .get(studente_id);
+    const studente = db.prepare("SELECT * FROM studenti WHERE id = ?").get(studente_id);
     if (!studente) {
       return res.status(404).json({ errore: "Studente non trovato" });
     }
 
-    // Controlla se c'è già un ingresso aperto (senza uscita)
     const presenzaAperta = db
-      .prepare(
-        "SELECT * FROM presenze WHERE studente_id = ? AND uscita IS NULL"
-      )
+      .prepare("SELECT * FROM presenze WHERE studente_id = ? AND uscita IS NULL")
       .get(studente_id);
 
     if (presenzaAperta) {
       return res.status(400).json({
-        errore:
-          "Lo studente ha già un ingresso registrato. Registrare prima l'uscita.",
+        errore: "Lo studente ha già un ingresso registrato. Registrare prima l'uscita.",
       });
     }
 
-    const ora = new Date().toISOString();
+    // Usa orario personalizzato se fornito, altrimenti ora corrente
+    const ora = orario_personalizzato
+      ? new Date(orario_personalizzato).toISOString()
+      : new Date().toISOString();
+
+    // Valida che l'orario sia una data valida
+    if (isNaN(new Date(ora).getTime())) {
+      return res.status(400).json({ errore: "Orario non valido" });
+    }
+
     const result = db
-      .prepare(
-        "INSERT INTO presenze (studente_id, ingresso) VALUES (?, ?)"
-      )
+      .prepare("INSERT INTO presenze (studente_id, ingresso) VALUES (?, ?)")
       .run(studente_id, ora);
 
-    const nuovaPresenza = db
-      .prepare("SELECT * FROM presenze WHERE id = ?")
-      .get(result.lastInsertRowid);
+    const nuovaPresenza = db.prepare("SELECT * FROM presenze WHERE id = ?").get(result.lastInsertRowid);
     res.status(201).json(nuovaPresenza);
   } catch (err) {
     res.status(500).json({ errore: "Errore nella registrazione dell'ingresso" });
   }
 });
 
+
 // POST /api/presenze/uscita - Registra uscita e calcola ore
 app.post("/api/presenze/uscita", (req, res) => {
-  const { studente_id } = req.body;
+  const { studente_id, orario_personalizzato } = req.body; // ← aggiungi orario_personalizzato
 
   if (!studente_id) {
     return res.status(400).json({ errore: "ID studente obbligatorio" });
   }
 
   try {
-    const studente = db
-      .prepare("SELECT * FROM studenti WHERE id = ?")
-      .get(studente_id);
+    const studente = db.prepare("SELECT * FROM studenti WHERE id = ?").get(studente_id);
     if (!studente) {
       return res.status(404).json({ errore: "Studente non trovato" });
     }
 
-    // Trova la presenza aperta (senza uscita)
     const presenzaAperta = db
-      .prepare(
-        "SELECT * FROM presenze WHERE studente_id = ? AND uscita IS NULL"
-      )
+      .prepare("SELECT * FROM presenze WHERE studente_id = ? AND uscita IS NULL")
       .get(studente_id);
 
     if (!presenzaAperta) {
-      return res.status(400).json({
-        errore: "Nessun ingresso registrato per questo studente.",
-      });
+      return res.status(400).json({ errore: "Nessun ingresso registrato per questo studente." });
     }
 
-    const ora = new Date().toISOString();
+    // Usa orario personalizzato se fornito, altrimenti ora corrente
+    const ora = orario_personalizzato
+      ? new Date(orario_personalizzato).toISOString()
+      : new Date().toISOString();
+
+    // Valida che l'orario sia una data valida
+    if (isNaN(new Date(ora).getTime())) {
+      return res.status(400).json({ errore: "Orario non valido" });
+    }
+
     const ingresso = new Date(presenzaAperta.ingresso);
     const uscita = new Date(ora);
 
-    // Calcola ore consumate con arrotondamento a 2 decimali
+    // Controlla che l'uscita sia dopo l'ingresso
+    if (uscita <= ingresso) {
+      return res.status(400).json({ errore: "L'orario di uscita deve essere successivo all'ingresso." });
+    }
+
     const differenzaMs = uscita - ingresso;
     const oreConsumate = Math.round((differenzaMs / (1000 * 60 * 60)) * 100) / 100;
 
-    // Inizia una transazione: aggiorna presenza e (se "ore") scala il credito
     const aggiornaPresenzaEOre = db.transaction(() => {
-      // Aggiorna la presenza con uscita e ore
-      db.prepare(
-        "UPDATE presenze SET uscita = ?, ore_consumate = ? WHERE id = ?"
-      ).run(ora, oreConsumate, presenzaAperta.id);
+      db.prepare("UPDATE presenze SET uscita = ?, ore_consumate = ? WHERE id = ?")
+        .run(ora, oreConsumate, presenzaAperta.id);
 
-      // Se studente a ore, scala il credito (senza andare sotto zero)
       if (studente.tipo_pagamento === "ore") {
         const nuoveOre = Math.max(0, studente.ore_residue - oreConsumate);
-        db.prepare("UPDATE studenti SET ore_residue = ? WHERE id = ?").run(
-          Math.round(nuoveOre * 100) / 100,
-          studente_id
-        );
+        db.prepare("UPDATE studenti SET ore_residue = ? WHERE id = ?")
+          .run(Math.round(nuoveOre * 100) / 100, studente_id);
       }
     });
 
     aggiornaPresenzaEOre();
 
-    // Restituisce la presenza aggiornata e lo studente aggiornato
-    const presenzaAggiornata = db
-      .prepare("SELECT * FROM presenze WHERE id = ?")
-      .get(presenzaAperta.id);
-    const studenteAggiornato = db
-      .prepare("SELECT * FROM studenti WHERE id = ?")
-      .get(studente_id);
+    const presenzaAggiornata = db.prepare("SELECT * FROM presenze WHERE id = ?").get(presenzaAperta.id);
+    const studenteAggiornato = db.prepare("SELECT * FROM studenti WHERE id = ?").get(studente_id);
 
     res.json({ presenza: presenzaAggiornata, studente: studenteAggiornato });
   } catch (err) {
     res.status(500).json({ errore: "Errore nella registrazione dell'uscita" });
   }
 });
+
 // PUT /api/studenti/:id - Modifica tipo pagamento di uno studente
 app.put("/api/studenti/:id", (req, res) => {
   const { id } = req.params;
