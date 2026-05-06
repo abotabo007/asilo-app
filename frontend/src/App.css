@@ -1,55 +1,98 @@
 /* ============================================================
    App.css — Gestione Asilo — Redesign completo
-   Direzione: Soft Professional
+   Direzione: Vivace & Professionale
    Font: Nunito (Google Fonts) — rotondo, leggibile, amichevole
-   Palette: crema caldo + verde salvia + accenti ambra
+   Palette personalizzata:
+     Petrolio   #1B687D  — colore primario, header, azioni principali
+     Giallo     #E7A922  — accento caldo, abbonamento, highlights
+     Rosso      #D93630  — uscita, pericolo, eliminazione
+     Turchese   #46B1AC  — secondario, presenze, successo
+     Arancio    #DB6E2A  — ore, warning, credito basso
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Nunito+Sans:wght@400;500;600&display=swap');
 
 /* === VARIABILI GLOBALI === */
 :root {
-  /* Palette principale */
-  --cream:        #faf8f5;
-  --cream-dark:   #f0ede8;
-  --cream-border: #e8e2d9;
+  /* ── Palette brand ── */
 
-  --sage:         #5a8a6a;
-  --sage-dark:    #3f6b4f;
-  --sage-light:   #edf5f0;
-  --sage-mid:     #c8dece;
+  /* Petrolio — primario */
+  --petrol:         #1B687D;
+  --petrol-dark:    #134f60;
+  --petrol-light:   #e8f3f6;
+  --petrol-mid:     #a8cdd6;
 
-  --amber:        #d47c2e;
-  --amber-light:  #fdf3e7;
-  --amber-mid:    #f2d4a8;
+  /* Turchese — secondario / successo */
+  --teal:           #46B1AC;
+  --teal-dark:      #2e8a86;
+  --teal-light:     #eaf7f6;
+  --teal-mid:       #b0dedd;
 
-  --coral:        #d45a5a;
-  --coral-light:  #fdf0f0;
-  --coral-mid:    #f2b8b8;
+  /* Giallo — abbonamento / highlight */
+  --yellow:         #E7A922;
+  --yellow-dark:    #b8821a;
+  --yellow-light:   #fdf6e3;
+  --yellow-mid:     #f5d88a;
 
-  --sky:          #4a7fa8;
-  --sky-light:    #eef5fb;
+  /* Arancio — a ore / warning */
+  --orange:         #DB6E2A;
+  --orange-dark:    #b05520;
+  --orange-light:   #fdf0e6;
+  --orange-mid:     #f2c49a;
 
-  /* Testo */
-  --text:         #2c2420;
-  --text-mid:     #6b5f58;
-  --text-soft:    #9e928b;
+  /* Rosso — uscita / pericolo */
+  --red:            #D93630;
+  --red-dark:       #a82828;
+  --red-light:      #fdecea;
+  --red-mid:        #f2aaaa;
 
-  /* Superfici */
-  --white:        #ffffff;
-  --surface:      #ffffff;
+  /* ── Mappature semantiche (usate nel CSS sotto) ── */
+  /* Così non serve riscrivere tutto il CSS che usa --sage, --coral ecc. */
+  --sage:           var(--teal);
+  --sage-dark:      var(--teal-dark);
+  --sage-light:     var(--teal-light);
+  --sage-mid:       var(--teal-mid);
 
-  /* Misure */
-  --radius-sm:    8px;
-  --radius:       14px;
-  --radius-lg:    20px;
-  --radius-xl:    28px;
+  --coral:          var(--red);
+  --coral-light:    var(--red-light);
+  --coral-mid:      var(--red-mid);
 
-  /* Ombre */
-  --shadow-sm:    0 2px 8px rgba(44,36,32,.07);
-  --shadow:       0 4px 16px rgba(44,36,32,.10);
-  --shadow-lg:    0 8px 32px rgba(44,36,32,.14);
-  --shadow-xl:    0 16px 48px rgba(44,36,32,.18);
+  --amber:          var(--orange);
+  --amber-light:    var(--orange-light);
+  --amber-mid:      var(--orange-mid);
+
+  --sky:            var(--petrol);
+  --sky-light:      var(--petrol-light);
+
+  --primary:        var(--petrol);
+  --primary-dark:   var(--petrol-dark);
+  --primary-light:  var(--petrol-light);
+
+  /* ── Sfondo e superfici ── */
+  /* Sfondo leggermente caldo per evocare calore, non freddo */
+  --cream:          #f7f5f2;
+  --cream-dark:     #edeae5;
+  --cream-border:   #ddd9d3;
+
+  --white:          #ffffff;
+  --surface:        #ffffff;
+
+  /* ── Testo ── */
+  --text:           #1a2a30;   /* quasi nero con tono petrolio */
+  --text-mid:       #4a6068;
+  --text-soft:      #8aa0a8;
+
+  /* ── Misure ── */
+  --radius-sm:      8px;
+  --radius:         14px;
+  --radius-lg:      20px;
+  --radius-xl:      28px;
+
+  /* ── Ombre ── */
+  --shadow-sm:      0 2px 8px rgba(27,104,125,.08);
+  --shadow:         0 4px 16px rgba(27,104,125,.12);
+  --shadow-lg:      0 8px 32px rgba(27,104,125,.15);
+  --shadow-xl:      0 16px 48px rgba(27,104,125,.20);
 }
 
 /* === RESET === */
@@ -74,8 +117,8 @@ body {
 
 /* === HEADER === */
 .header {
-  background: var(--white);
-  border-bottom: 2px solid var(--cream-border);
+  background: var(--petrol);
+  border-bottom: 2px solid var(--petrol-dark);
   padding: 0 24px;
   position: sticky;
   top: 0;
@@ -101,11 +144,11 @@ body {
 
 .logo-badge {
   width: 46px; height: 46px;
-  background: var(--sage);
+  background: rgba(255,255,255,.2);
+  border: 2px solid rgba(255,255,255,.35);
   border-radius: var(--radius);
   display: flex; align-items: center; justify-content: center;
   font-size: 1.4rem;
-  box-shadow: 0 4px 12px rgba(90,138,106,.3);
   flex-shrink: 0;
 }
 
@@ -113,13 +156,13 @@ body {
   font-family: 'Nunito', sans-serif;
   font-size: 1.25rem;
   font-weight: 800;
-  color: var(--text);
+  color: #ffffff;
   line-height: 1.2;
 }
 
 .logo-text p {
   font-size: 0.75rem;
-  color: var(--text-soft);
+  color: rgba(255,255,255,.7);
   font-weight: 500;
 }
 
@@ -160,9 +203,9 @@ body {
   font-size: 1.4rem;
   flex-shrink: 0;
 }
-.stat-icon.green  { background: var(--sage-light); }
-.stat-icon.amber  { background: var(--amber-light); }
-.stat-icon.sky    { background: var(--sky-light); }
+.stat-icon.green  { background: var(--teal-light); }
+.stat-icon.amber  { background: var(--orange-light); }
+.stat-icon.sky    { background: var(--yellow-light); }
 
 .stat-body { display: flex; flex-direction: column; gap: 2px; }
 .stat-num {
@@ -217,11 +260,11 @@ body {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 4px;
-  background: var(--sage-mid);
+  background: var(--teal-mid);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
-.studente-card.ore-basse::before { background: var(--amber-mid); }
+.studente-card.ore-basse::before { background: var(--orange-mid); }
 .studente-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 
 .card-header {
@@ -233,14 +276,14 @@ body {
 .avatar {
   width: 48px; height: 48px;
   border-radius: 50%;
-  background: var(--sage-light);
-  color: var(--sage-dark);
+  background: var(--teal-light);
+  color: var(--teal-dark);
   display: flex; align-items: center; justify-content: center;
   font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: 0.95rem;
   flex-shrink: 0;
-  border: 2px solid var(--sage-mid);
+  border: 2px solid var(--teal-mid);
 }
 
 .avatar-lg { width: 56px; height: 56px; font-size: 1.1rem; }
@@ -285,10 +328,10 @@ body {
   font-family: 'Nunito', sans-serif;
   font-size: 1.4rem;
   font-weight: 900;
-  color: var(--sage-dark);
+  color: var(--teal-dark);
   line-height: 1.1;
 }
-.ore-display.ore-warning .ore-value { color: var(--amber); }
+.ore-display.ore-warning .ore-value { color: var(--orange); }
 .ore-alert { font-size: 0.72rem; color: var(--amber); font-weight: 700; }
 
 /* Aggiungi ore */
@@ -346,13 +389,13 @@ body {
 .btn:active:not(:disabled) { transform: scale(.97); }
 
 .btn-primary {
-  background: var(--sage);
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(90,138,106,.35);
+  background: #ffffff;
+  color: var(--petrol);
+  box-shadow: 0 4px 14px rgba(0,0,0,.15);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--sage-dark);
-  box-shadow: 0 6px 18px rgba(90,138,106,.45);
+  background: var(--petrol-light);
+  box-shadow: 0 6px 18px rgba(0,0,0,.2);
   transform: translateY(-1px);
 }
 
@@ -416,7 +459,7 @@ body {
   background: var(--sage-mid);
   border-color: var(--sage);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(90,138,106,.25);
+  box-shadow: 0 6px 16px rgba(70,177,172,.25);
 }
 .btn-ingresso .btn-big-icon { font-size: 1.8rem; }
 .btn-ingresso .btn-big-label { font-size: 0.9rem; }
@@ -442,7 +485,7 @@ body {
   background: var(--coral-mid);
   border-color: var(--coral);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(212,90,90,.25);
+  box-shadow: 0 6px 16px rgba(217,54,48,.25);
 }
 .btn-uscita .btn-big-icon { font-size: 1.8rem; }
 .btn-uscita .btn-big-label { font-size: 0.9rem; }
@@ -458,10 +501,10 @@ body {
   font-weight: 700;
   letter-spacing: .02em;
 }
-.badge-abbonamento { background: var(--sky-light); color: var(--sky); border: 1px solid #c5dff2; }
-.badge-ore         { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-mid); }
-.badge-success     { background: var(--sage-light); color: var(--sage-dark); border: 1px solid var(--sage-mid); }
-.badge-warning     { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-mid); }
+.badge-abbonamento { background: var(--yellow-light); color: var(--yellow-dark); border: 1px solid var(--yellow-mid); }
+.badge-ore         { background: var(--orange-light); color: var(--orange-dark); border: 1px solid var(--orange-mid); }
+.badge-success     { background: var(--teal-light);   color: var(--teal-dark);   border: 1px solid var(--teal-mid); }
+.badge-warning     { background: var(--orange-light); color: var(--orange-dark); border: 1px solid var(--orange-mid); }
 
 /* === ALERT === */
 .alert {
@@ -493,7 +536,7 @@ body {
 }
 .input:focus {
   border-color: var(--sage);
-  box-shadow: 0 0 0 3px rgba(90,138,106,.15);
+  box-shadow: 0 0 0 3px rgba(70,177,172,.15);
 }
 .input::placeholder { color: var(--text-soft); }
 
@@ -508,7 +551,7 @@ body {
   background: var(--white);
   color: var(--text);
 }
-.input-sm:focus { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(90,138,106,.15); }
+.input-sm:focus { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(70,177,172,.15); }
 
 .hint { font-size: 0.75rem; color: var(--text-soft); margin-top: 5px; display: block; }
 
@@ -546,7 +589,7 @@ body {
 /* === MODALI === */
 .modale-overlay {
   position: fixed; inset: 0;
-  background: rgba(44,36,32,.45);
+  background: rgba(27,104,125,.45);
   backdrop-filter: blur(4px);
   /* Scroll sull'overlay: il modale può crescere oltre lo schermo */
   overflow-y: auto;
@@ -684,7 +727,7 @@ body {
 
 .toggle-row input[type="checkbox"] {
   width: 18px; height: 18px;
-  accent-color: var(--sage);
+  accent-color: var(--teal);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -967,7 +1010,7 @@ input[type="datetime-local"].input {
 .btn-presenza-ingresso:hover:not(:disabled) {
   background: var(--sage-mid);
   border-color: var(--sage);
-  box-shadow: 0 4px 12px rgba(90,138,106,.2);
+  box-shadow: 0 4px 12px rgba(70,177,172,.2);
 }
 
 .btn-presenza-uscita {
@@ -978,7 +1021,7 @@ input[type="datetime-local"].input {
 .btn-presenza-uscita:hover:not(:disabled) {
   background: var(--coral-mid);
   border-color: var(--coral);
-  box-shadow: 0 4px 12px rgba(212,90,90,.2);
+  box-shadow: 0 4px 12px rgba(217,54,48,.2);
 }
 
 .btn-presenza-icon { font-size: 1.2rem; }
@@ -991,7 +1034,7 @@ input[type="datetime-local"].input {
 .mp-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(44,36,32,.5);
+  background: rgba(27,104,125,.5);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -1006,7 +1049,7 @@ input[type="datetime-local"].input {
   border-radius: 20px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 60px rgba(44,36,32,.2);
+  box-shadow: 0 20px 60px rgba(27,104,125,.2);
   border: 1.5px solid var(--cream-border);
   animation: mpIn .2s cubic-bezier(.34,1.4,.64,1);
   /* Nessun max-height: cresce liberamente */
@@ -1069,9 +1112,9 @@ input[type="datetime-local"].input {
 .mp-avatar {
   width: 46px; height: 46px;
   border-radius: 50%;
-  background: var(--sage-light);
-  color: var(--sage-dark);
-  border: 2px solid var(--sage-mid);
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  border: 2px solid var(--teal-mid);
   display: flex; align-items: center; justify-content: center;
   font-family: 'Nunito', sans-serif;
   font-weight: 800;
@@ -1147,7 +1190,7 @@ input[type="datetime-local"].input {
 .mp-tab-active {
   background: #fff;
   color: var(--text);
-  box-shadow: 0 2px 8px rgba(44,36,32,.1);
+  box-shadow: 0 2px 8px rgba(27,104,125,.1);
 }
 
 .mp-tab-dot {
@@ -1155,8 +1198,8 @@ input[type="datetime-local"].input {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.mp-dot-green { background: var(--sage); }
-.mp-dot-red   { background: var(--coral); }
+.mp-dot-green { background: var(--teal); }
+.mp-dot-red   { background: var(--red); }
 
 /* TAB CONTENT */
 .mp-tab-content {
@@ -1168,8 +1211,8 @@ input[type="datetime-local"].input {
   border: 2px solid var(--cream-border);
 }
 
-.mp-content-entrata { border-color: var(--sage-mid); background: var(--sage-light); }
-.mp-content-uscita  { border-color: var(--coral-mid); background: var(--coral-light); }
+.mp-content-entrata { border-color: var(--teal-mid); background: var(--teal-light); }
+.mp-content-uscita  { border-color: var(--red-mid);  background: var(--red-light); }
 
 /* TOGGLE ORARIO MANUALE */
 .mp-toggle {
@@ -1186,7 +1229,7 @@ input[type="datetime-local"].input {
 
 .mp-toggle input[type="checkbox"] {
   width: 18px; height: 18px;
-  accent-color: var(--sage);
+  accent-color: var(--teal);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -1230,8 +1273,8 @@ input[type="datetime-local"].input {
   min-width: 0;
 }
 .mp-input:focus {
-  border-color: var(--sage);
-  box-shadow: 0 0 0 3px rgba(90,138,106,.15);
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(70,177,172,.15);
 }
 
 /* BOTTONE CONFERMA */
@@ -1255,24 +1298,24 @@ input[type="datetime-local"].input {
 .mp-btn-conferma:active:not(:disabled) { transform: scale(.98); }
 
 .mp-btn-entrata {
-  background: var(--sage);
+  background: var(--teal);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(90,138,106,.35);
+  box-shadow: 0 4px 14px rgba(70,177,172,.35);
 }
 .mp-btn-entrata:hover:not(:disabled) {
-  background: var(--sage-dark);
-  box-shadow: 0 6px 18px rgba(90,138,106,.45);
+  background: var(--teal-dark);
+  box-shadow: 0 6px 18px rgba(70,177,172,.45);
   transform: translateY(-1px);
 }
 
 .mp-btn-uscita {
-  background: var(--coral);
+  background: var(--red);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(212,90,90,.3);
+  box-shadow: 0 4px 14px rgba(217,54,48,.3);
 }
 .mp-btn-uscita:hover:not(:disabled) {
-  background: #bc4040;
-  box-shadow: 0 6px 18px rgba(212,90,90,.4);
+  background: var(--red-dark);
+  box-shadow: 0 6px 18px rgba(217,54,48,.4);
   transform: translateY(-1px);
 }
 
@@ -1295,8 +1338,8 @@ input[type="datetime-local"].input {
 
 .mp-successo-icon {
   width: 60px; height: 60px;
-  background: var(--sage-light);
-  border: 2px solid var(--sage-mid);
+  background: var(--teal-light);
+  border: 2px solid var(--teal-mid);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.8rem;
@@ -1306,7 +1349,7 @@ input[type="datetime-local"].input {
   font-family: 'Nunito', sans-serif;
   font-size: 1.1rem;
   font-weight: 800;
-  color: var(--sage-dark);
+  color: var(--teal-dark);
 }
 
 .mp-successo-dettaglio {

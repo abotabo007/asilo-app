@@ -107,7 +107,7 @@ export default function App() {
           <div className="header-logo">
             <div className="logo-badge">🏫</div>
             <div className="logo-text">
-              <h1>Gestione Asilo</h1>
+              <h1>Gestione BabyParking</h1>
               <p>Sistema presenze e studenti</p>
             </div>
           </div>
