@@ -6,7 +6,7 @@ import ModalePresenza from "./components/ModalePresenza";
 import ModaleStorico from "./components/ModaleStorico";
 import "./App.css";
 
-const API = "http://localhost:3001/api";
+const API = "http://192.168.1.15:3001/api";
 
 export default function App() {
   const [studenti, setStudenti] = useState([]);

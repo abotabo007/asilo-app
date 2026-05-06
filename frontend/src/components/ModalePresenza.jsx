@@ -1,5 +1,4 @@
-// src/components/ModalePresenza.jsx
-// Fix: bottoni conferma sempre visibili, orario manuale modifica solo il valore inviato
+// src/components/ModalePresenza.jsx — Redesign con tab Entrata/Uscita
 import { useState } from "react";
 
 function orarioAdesso() {
@@ -8,181 +7,201 @@ function orarioAdesso() {
   return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }
 
-function formatOra(isoString) {
-  if (!isoString) return "-";
-  return new Date(isoString).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+function formatOra(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 }
 
-function formatData(isoString) {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleDateString("it-IT", { day: "2-digit", month: "long" });
+function formatData(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "long" });
 }
 
 export default function ModalePresenza({ studente, onClose, onIngresso, onUscita }) {
+  const [tab,            setTab]            = useState("entrata"); // "entrata" | "uscita"
   const [orarioIngresso, setOrarioIngresso] = useState(orarioAdesso());
   const [orarioUscita,   setOrarioUscita]   = useState(orarioAdesso());
-  const [orarioManuale,  setOrarioManuale]  = useState(false);
+  const [usaManuale,     setUsaManuale]     = useState(false);
   const [loading,        setLoading]        = useState(false);
   const [risultato,      setRisultato]      = useState(null);
   const [errore,         setErrore]         = useState("");
 
-  const handleIngresso = async () => {
-    setErrore(""); setLoading(true);
-    try {
-      const orario = orarioManuale ? orarioIngresso : null;
-      const data = await onIngresso(studente.id, orario);
-      setRisultato({
-        tipo: "ingresso",
-        titolo: "Entrata registrata!",
-        dettaglio: `${studente.nome} è entrato alle ${formatOra(data.ingresso)} del ${formatData(data.ingresso)}`,
-      });
-    } catch (e) { setErrore(e.message); }
-    finally { setLoading(false); }
+  // Quando si cambia tab azzera l'errore e aggiorna l'orario al momento attuale
+  const cambiaTab = (nuovoTab) => {
+    setTab(nuovoTab);
+    setErrore("");
+    if (nuovoTab === "entrata") setOrarioIngresso(orarioAdesso());
+    else                        setOrarioUscita(orarioAdesso());
   };
 
-  const handleUscita = async () => {
-    setErrore(""); setLoading(true);
+  const handleConferma = async () => {
+    setErrore("");
+    setLoading(true);
     try {
-      const orario = orarioManuale ? orarioUscita : null;
-      const data = await onUscita(studente.id, orario);
-      const ore = data.presenza.ore_consumate;
-      setRisultato({
-        tipo: "uscita",
-        titolo: "Uscita registrata!",
-        dettaglio:
-          `${studente.nome} è uscito alle ${formatOra(data.presenza.uscita)}` +
-          ` · ${ore}h in asilo` +
-          (studente.tipo_pagamento === "ore"
-            ? ` · Ore rimaste: ${Number(data.studente.ore_residue).toFixed(1)}h`
-            : ""),
-      });
-    } catch (e) { setErrore(e.message); }
-    finally { setLoading(false); }
+      if (tab === "entrata") {
+        const orario = usaManuale ? orarioIngresso : null;
+        const data = await onIngresso(studente.id, orario);
+        setRisultato({
+          tipo: "entrata",
+          titolo: "Entrata registrata!",
+          dettaglio: `${studente.nome} è entrato alle ${formatOra(data.ingresso)} del ${formatData(data.ingresso)}`,
+        });
+      } else {
+        const orario = usaManuale ? orarioUscita : null;
+        const data = await onUscita(studente.id, orario);
+        const ore = data.presenza.ore_consumate;
+        setRisultato({
+          tipo: "uscita",
+          titolo: "Uscita registrata!",
+          dettaglio:
+            `${studente.nome} è uscito alle ${formatOra(data.presenza.uscita)}` +
+            ` · ${ore}h in asilo` +
+            (studente.tipo_pagamento === "ore"
+              ? ` · Ore rimaste: ${Number(data.studente.ore_residue).toFixed(1)}h`
+              : ""),
+        });
+      }
+    } catch (e) {
+      setErrore(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const isEntrata = tab === "entrata";
 
   return (
-    <div className="modale-overlay" onClick={onClose}>
-      <div className="modale modale-sm" onClick={e => e.stopPropagation()}>
+    <div className="mp-overlay" onClick={onClose}>
+      <div className="mp-modale" onClick={e => e.stopPropagation()}>
 
-        <div className="modale-header">
+        {/* HEADER */}
+        <div className="mp-header">
           <h2>⏰ Registra presenza</h2>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <button className="mp-close" onClick={onClose} aria-label="Chiudi">✕</button>
         </div>
 
-        <div className="modale-body">
+        <div className="mp-body">
 
-          <div className="studente-info-box">
-            <div className="avatar avatar-lg">
+          {/* INFO STUDENTE */}
+          <div className="mp-studente">
+            <div className="mp-avatar">
               {studente.nome[0]}{studente.cognome[0]}
             </div>
-            <div>
+            <div className="mp-studente-info">
               <strong>{studente.nome} {studente.cognome}</strong>
-              <p>
+              <span>
                 {studente.tipo_pagamento === "ore"
-                  ? `⏱ A ore · Credito rimasto: ${Number(studente.ore_residue).toFixed(1)}h`
+                  ? `⏱ A ore · Credito: ${Number(studente.ore_residue).toFixed(1)}h`
                   : "📅 Abbonamento mensile"}
-              </p>
+              </span>
             </div>
           </div>
 
+          {/* AVVISO ORE ESAURITE */}
           {studente.tipo_pagamento === "ore" && studente.ore_residue <= 0 && !risultato && (
-            <div className="alert alert-warning">
+            <div className="mp-alert mp-alert-warn">
               ⚠️ Questo bambino ha esaurito le ore disponibili!
             </div>
           )}
 
+          {/* SCHERMATA SUCCESSO */}
           {risultato ? (
-            <div className="success-feedback">
-              <div className="success-icon">
-                {risultato.tipo === "ingresso" ? "🟢" : "✅"}
+            <div className="mp-successo">
+              <div className="mp-successo-icon">
+                {risultato.tipo === "entrata" ? "🟢" : "✅"}
               </div>
-              <div className="success-title">{risultato.titolo}</div>
-              <div className="success-detail">{risultato.dettaglio}</div>
+              <div className="mp-successo-titolo">{risultato.titolo}</div>
+              <div className="mp-successo-dettaglio">{risultato.dettaglio}</div>
             </div>
           ) : (
             <>
-              <label className="toggle-row">
-                <input
-                  type="checkbox"
-                  checked={orarioManuale}
-                  onChange={e => setOrarioManuale(e.target.checked)}
-                />
-                <div className="toggle-label">
-                  <span>Inserisci orario manualmente</span>
-                  <small>Attiva per specificare un orario diverso da adesso</small>
-                </div>
-              </label>
+              {/* TAB SELECTOR */}
+              <div className="mp-tabs">
+                <button
+                  className={`mp-tab ${tab === "entrata" ? "mp-tab-active mp-tab-entrata" : ""}`}
+                  onClick={() => cambiaTab("entrata")}
+                >
+                  <span className="mp-tab-dot mp-dot-green"></span>
+                  Entrata
+                </button>
+                <button
+                  className={`mp-tab ${tab === "uscita" ? "mp-tab-active mp-tab-uscita" : ""}`}
+                  onClick={() => cambiaTab("uscita")}
+                >
+                  <span className="mp-tab-dot mp-dot-red"></span>
+                  Uscita
+                </button>
+              </div>
 
-              {orarioManuale ? (
-                <div className="orari-box">
-                  <div className="orario-field">
-                    <div className="orario-field-label">
-                      <span className="orario-dot green"></span>
-                      Orario di entrata
-                    </div>
+              {/* CONTENUTO TAB */}
+              <div className={`mp-tab-content ${isEntrata ? "mp-content-entrata" : "mp-content-uscita"}`}>
+
+                {/* TOGGLE ORARIO MANUALE */}
+                <label className="mp-toggle">
+                  <input
+                    type="checkbox"
+                    checked={usaManuale}
+                    onChange={e => setUsaManuale(e.target.checked)}
+                  />
+                  <div className="mp-toggle-testo">
+                    <span>Orario personalizzato</span>
+                    <small>
+                      {usaManuale
+                        ? "Modifica la data e l'ora qui sotto"
+                        : "Verrà usato l'orario attuale"}
+                    </small>
+                  </div>
+                </label>
+
+                {/* CAMPO ORARIO (visibile solo se toggle attivo) */}
+                {usaManuale && (
+                  <div className="mp-orario-field">
+                    <label className="mp-orario-label">
+                      {isEntrata ? "🟢 Orario di entrata" : "🔴 Orario di uscita"}
+                    </label>
                     <input
                       type="datetime-local"
-                      className="input"
-                      value={orarioIngresso}
-                      onChange={e => setOrarioIngresso(e.target.value)}
+                      className="mp-input"
+                      value={isEntrata ? orarioIngresso : orarioUscita}
+                      onChange={e =>
+                        isEntrata
+                          ? setOrarioIngresso(e.target.value)
+                          : setOrarioUscita(e.target.value)
+                      }
                     />
-                    <button
-                      className="btn-presenza btn-presenza-ingresso"
-                      onClick={handleIngresso}
-                      disabled={loading}
-                    >
-                      <span className="btn-presenza-icon">🟢</span>
-                      <span>Conferma entrata</span>
-                    </button>
                   </div>
+                )}
 
-                  <div className="orari-divider">oppure</div>
+                {/* ERRORE */}
+                {errore && (
+                  <div className="mp-alert mp-alert-error">❌ {errore}</div>
+                )}
 
-                  <div className="orario-field">
-                    <div className="orario-field-label">
-                      <span className="orario-dot red"></span>
-                      Orario di uscita
-                    </div>
-                    <input
-                      type="datetime-local"
-                      className="input"
-                      value={orarioUscita}
-                      onChange={e => setOrarioUscita(e.target.value)}
-                    />
-                    <button
-                      className="btn-presenza btn-presenza-uscita"
-                      onClick={handleUscita}
-                      disabled={loading}
-                    >
-                      <span className="btn-presenza-icon">🔴</span>
-                      <span>Conferma uscita</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <p className="presenza-section-label">Registra con l'orario attuale</p>
-                  <div className="presenza-buttons">
-                    <button className="btn-ingresso" onClick={handleIngresso} disabled={loading}>
-                      <span className="btn-big-icon">🟢</span>
-                      <span className="btn-big-label">Conferma entrata</span>
-                    </button>
-                    <button className="btn-uscita" onClick={handleUscita} disabled={loading}>
-                      <span className="btn-big-icon">🔴</span>
-                      <span className="btn-big-label">Conferma uscita</span>
-                    </button>
-                  </div>
-                </>
-              )}
+                {/* BOTTONE CONFERMA */}
+                <button
+                  className={`mp-btn-conferma ${isEntrata ? "mp-btn-entrata" : "mp-btn-uscita"}`}
+                  onClick={handleConferma}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span>Salvataggio...</span>
+                  ) : (
+                    <>
+                      <span className="mp-btn-icon">{isEntrata ? "🟢" : "🔴"}</span>
+                      <span>{isEntrata ? "Conferma entrata" : "Conferma uscita"}</span>
+                    </>
+                  )}
+                </button>
 
-              {errore && <div className="alert alert-error">❌ {errore}</div>}
+              </div>
             </>
           )}
 
         </div>
 
-        <div className="modale-footer">
-          <button className="btn btn-outline" onClick={onClose}>
+        {/* FOOTER */}
+        <div className="mp-footer">
+          <button className="mp-btn-annulla" onClick={onClose}>
             {risultato ? "Chiudi" : "Annulla"}
           </button>
         </div>
