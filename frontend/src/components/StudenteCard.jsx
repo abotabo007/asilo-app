@@ -2,24 +2,24 @@
 import { useState } from "react";
 
 export default function StudenteCard({
-  studente, onElimina, onPresenza, onStorico, onAggiungiOre, onModifica,
+  studente, onElimina, onPresenza, onStorico, onAggiungiOre, onModifica, onNote,
 }) {
-  const [aggiungiOreMode, setAggiungiOreMode] = useState(false);
-  const [oreInput, setOreInput] = useState("");
-  const [erroreOre, setErroreOre] = useState("");
+  const [addOreMode, setAddOreMode] = useState(false);
+  const [oreInput,   setOreInput]   = useState("");
+  const [errOre,     setErrOre]     = useState("");
 
-  const isOre = studente.tipo_pagamento === "ore";
+  const isOre   = studente.tipo_pagamento === "ore";
   const oreBasse = isOre && studente.ore_residue < 2;
+  const haNota  = studente.note && studente.note.trim().length > 0;
 
   const handleAggiungiOre = async () => {
-    setErroreOre("");
+    setErrOre("");
     const val = parseFloat(oreInput);
-    if (isNaN(val) || val <= 0) { setErroreOre("Inserire un numero > 0"); return; }
+    if (isNaN(val) || val <= 0) { setErrOre("Inserire un numero > 0"); return; }
     try {
       await onAggiungiOre(val);
-      setOreInput("");
-      setAggiungiOreMode(false);
-    } catch (e) { setErroreOre(e.message); }
+      setOreInput(""); setAddOreMode(false);
+    } catch (e) { setErrOre(e.message); }
   };
 
   return (
@@ -34,8 +34,9 @@ export default function StudenteCard({
           </span>
         </div>
         <div className="card-actions-top">
+          <button className="btn-icon" onClick={onNote}     title="Note">📝</button>
           <button className="btn-icon" onClick={onModifica} title="Modifica tipo pagamento">✏️</button>
-          <button className="btn-icon btn-danger-icon" onClick={onElimina} title="Elimina studente">🗑</button>
+          <button className="btn-icon btn-danger-icon" onClick={onElimina} title="Elimina">🗑</button>
         </div>
       </div>
 
@@ -54,25 +55,34 @@ export default function StudenteCard({
       {/* Aggiungi ore */}
       {isOre && (
         <div className="aggiungi-ore-section">
-          {!aggiungiOreMode ? (
-            <button className="btn btn-outline btn-sm" onClick={() => setAggiungiOreMode(true)}>
+          {!addOreMode ? (
+            <button className="btn btn-outline btn-sm" onClick={() => setAddOreMode(true)}>
               + Aggiungi ore
             </button>
           ) : (
             <div className="ore-input-group">
               <input
-                type="number" placeholder="es: 10"
-                value={oreInput} min="0.5" step="0.5"
+                type="number" placeholder="es: 10" value={oreInput}
+                min="0.5" step="0.5" className="input-sm"
                 onChange={e => setOreInput(e.target.value)}
-                className="input-sm"
               />
-              <button className="btn btn-success btn-sm" onClick={handleAggiungiOre}>✓ Conferma</button>
-              <button className="btn btn-outline btn-sm" onClick={() => { setAggiungiOreMode(false); setErroreOre(""); setOreInput(""); }}>✕</button>
-              {erroreOre && <span className="errore-inline">{erroreOre}</span>}
+              <button className="btn btn-success btn-sm" onClick={handleAggiungiOre}>✓</button>
+              <button className="btn btn-outline btn-sm" onClick={() => { setAddOreMode(false); setErrOre(""); setOreInput(""); }}>✕</button>
+              {errOre && <span className="errore-inline">{errOre}</span>}
             </div>
           )}
         </div>
       )}
+
+      {/* Anteprima nota */}
+      <div
+        className={`note-preview ${haNota ? "has-note" : ""}`}
+        onClick={onNote}
+        style={{ cursor: "pointer" }}
+        title="Clicca per modificare le note"
+      >
+        {haNota ? `📝 ${studente.note}` : "📝 Nessuna nota — clicca per aggiungere"}
+      </div>
 
       {/* Meta */}
       <div className="card-meta">
@@ -80,12 +90,12 @@ export default function StudenteCard({
         <span>{studente.totale_presenze} presenze registrate</span>
       </div>
 
-      {/* Azioni principali */}
+      {/* Azioni */}
       <div className="card-actions">
-        <button className="btn btn-primary" style={{flex:1}} onClick={onPresenza}>
+        <button className="btn btn-primary-teal" style={{ flex: 1 }} onClick={onPresenza}>
           ⏰ Entrata / Uscita
         </button>
-        <button className="btn btn-outline btn-sm" onClick={onStorico} title="Vedi storico">
+        <button className="btn btn-outline btn-sm" onClick={onStorico} title="Storico presenze">
           📋
         </button>
       </div>

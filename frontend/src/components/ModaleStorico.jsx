@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 
 export default function ModaleStorico({ studente, onClose, api }) {
   const [presenze, setPresenze] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
     const carica = async () => {
@@ -32,7 +32,6 @@ export default function ModaleStorico({ studente, onClose, api }) {
           <h2>📋 Storico Presenze</h2>
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
-
         <div className="modale-body">
           <div className="studente-info-box">
             <div className="avatar">{studente.nome[0]}{studente.cognome[0]}</div>
@@ -53,20 +52,12 @@ export default function ModaleStorico({ studente, onClose, api }) {
           ) : (
             <>
               {studente.tipo_pagamento === "ore" && (
-                <div className="storico-summary">
-                  Totale ore consumate: <strong>{totaleOre.toFixed(1)}h</strong>
-                </div>
+                <div className="storico-summary">Totale ore consumate: <strong>{totaleOre.toFixed(1)}h</strong></div>
               )}
               <div className="table-wrapper">
                 <table className="table">
                   <thead>
-                    <tr>
-                      <th>Data</th>
-                      <th>Entrata</th>
-                      <th>Uscita</th>
-                      <th>Ore</th>
-                      <th>Stato</th>
-                    </tr>
+                    <tr><th>Data</th><th>Entrata</th><th>Uscita</th><th>Ore</th><th>Stato</th></tr>
                   </thead>
                   <tbody>
                     {presenze.map(p => (
@@ -88,7 +79,6 @@ export default function ModaleStorico({ studente, onClose, api }) {
             </>
           )}
         </div>
-
         <div className="modale-footer">
           <button className="btn btn-outline" onClick={onClose}>Chiudi</button>
         </div>
