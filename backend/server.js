@@ -1,65 +1,68 @@
 // ============================================================
-// server.js - Backend Gestione Asilo (versione finale)
+// server.js - Backend Gestione Asilo (PostgreSQL)
 // ============================================================
-const express  = require("express");
-const cors     = require("cors");
-const Database = require("better-sqlite3");
-const path     = require("path");
+const express = require("express");
+const cors    = require("cors");
+const { Pool } = require("pg");
 
 const app  = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "*"
+}));
 app.use(express.json());
 
-const db = new Database(path.join(__dirname, "asilo.db"));
-db.pragma("foreign_keys = ON");
-
-// ============================================================
-// SCHEMA
-// ============================================================
-db.exec(`
-  CREATE TABLE IF NOT EXISTS studenti (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome           TEXT    NOT NULL,
-    cognome        TEXT    NOT NULL,
-    tipo_pagamento TEXT    NOT NULL CHECK(tipo_pagamento IN ('abbonamento','ore')),
-    ore_residue    REAL    DEFAULT 0,
-    note           TEXT    DEFAULT '',
-    created_at     TEXT    DEFAULT (datetime('now','localtime'))
-  );
-
-  CREATE TABLE IF NOT EXISTS presenze (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    studente_id   INTEGER NOT NULL,
-    ingresso      TEXT    NOT NULL,
-    uscita        TEXT,
-    ore_consumate REAL,
-    created_at    TEXT    DEFAULT (datetime('now','localtime')),
-    FOREIGN KEY (studente_id) REFERENCES studenti(id) ON DELETE CASCADE
-  );
-`);
-
-// Migrazione sicura: aggiunge colonna note se il DB esiste già senza di essa
-try { db.exec("ALTER TABLE studenti ADD COLUMN note TEXT DEFAULT ''"); }
-catch (_) { /* già presente */ }
-
-// ============================================================
-// STUDENTI
-// ============================================================
-
-app.get("/api/studenti", (req, res) => {
-  try {
-    const studenti = db.prepare(`
-      SELECT s.*,
-        (SELECT COUNT(*) FROM presenze p WHERE p.studente_id = s.id) AS totale_presenze
-      FROM studenti s ORDER BY s.cognome, s.nome
-    `).all();
-    res.json(studenti);
-  } catch { res.status(500).json({ errore: "Errore nel recupero degli studenti" }); }
+// Connessione PostgreSQL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
 
-app.post("/api/studenti", (req, res) => {
+pool.connect((err, client, release) => {
+  if (err) console.error("Errore connessione DB:", err.message);
+  else { console.log("Connesso a PostgreSQL"); release(); }
+});
+
+// Inizializzazione tabelle
+async function inizializzaDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS studenti (
+      id             SERIAL PRIMARY KEY,
+      nome           TEXT    NOT NULL,
+      cognome        TEXT    NOT NULL,
+      tipo_pagamento TEXT    NOT NULL CHECK(tipo_pagamento IN ('abbonamento','ore')),
+      ore_residue    NUMERIC(8,2) DEFAULT 0,
+      note           TEXT    DEFAULT '',
+      created_at     TIMESTAMP DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS presenze (
+      id            SERIAL PRIMARY KEY,
+      studente_id   INTEGER NOT NULL REFERENCES studenti(id) ON DELETE CASCADE,
+      ingresso      TIMESTAMP NOT NULL,
+      uscita        TIMESTAMP,
+      ore_consumate NUMERIC(8,2),
+      created_at    TIMESTAMP DEFAULT NOW()
+    );
+  `);
+  console.log("Tabelle pronte");
+}
+inizializzaDB().catch(err => console.error("Errore inizializzazione DB:", err));
+
+// ── GET /api/studenti
+app.get("/api/studenti", async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT s.*,
+        (SELECT COUNT(*) FROM presenze p WHERE p.studente_id = s.id)::int AS totale_presenze
+      FROM studenti s ORDER BY s.cognome, s.nome
+    `);
+    res.json(r.rows);
+  } catch (err) { console.error(err); res.status(500).json({ errore: "Errore nel recupero degli studenti" }); }
+});
+
+// ── POST /api/studenti
+app.post("/api/studenti", async (req, res) => {
   const { nome, cognome, tipo_pagamento, ore_iniziali } = req.body;
   if (!nome || !cognome || !tipo_pagamento)
     return res.status(400).json({ errore: "Nome, cognome e tipo pagamento sono obbligatori" });
@@ -67,128 +70,153 @@ app.post("/api/studenti", (req, res) => {
     return res.status(400).json({ errore: "Tipo pagamento non valido" });
   try {
     const ore = tipo_pagamento === "ore" ? (parseFloat(ore_iniziali) || 0) : 0;
-    const r = db.prepare("INSERT INTO studenti (nome,cognome,tipo_pagamento,ore_residue) VALUES (?,?,?,?)")
-      .run(nome.trim(), cognome.trim(), tipo_pagamento, ore);
-    res.status(201).json(db.prepare("SELECT * FROM studenti WHERE id=?").get(r.lastInsertRowid));
-  } catch { res.status(500).json({ errore: "Errore nella creazione dello studente" }); }
+    const r = await pool.query(
+      "INSERT INTO studenti (nome,cognome,tipo_pagamento,ore_residue) VALUES ($1,$2,$3,$4) RETURNING *",
+      [nome.trim(), cognome.trim(), tipo_pagamento, ore]
+    );
+    res.status(201).json(r.rows[0]);
+  } catch (err) { console.error(err); res.status(500).json({ errore: "Errore nella creazione dello studente" }); }
 });
 
-app.delete("/api/studenti/:id", (req, res) => {
+// ── DELETE /api/studenti/:id
+app.delete("/api/studenti/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    if (!db.prepare("SELECT id FROM studenti WHERE id=?").get(id))
-      return res.status(404).json({ errore: "Studente non trovato" });
-    db.prepare("DELETE FROM studenti WHERE id=?").run(id);
+    const check = await pool.query("SELECT id FROM studenti WHERE id=$1", [id]);
+    if (!check.rows.length) return res.status(404).json({ errore: "Studente non trovato" });
+    await pool.query("DELETE FROM studenti WHERE id=$1", [id]);
     res.json({ messaggio: "Studente eliminato" });
-  } catch { res.status(500).json({ errore: "Errore nell'eliminazione" }); }
+  } catch (err) { console.error(err); res.status(500).json({ errore: "Errore nell'eliminazione" }); }
 });
 
-app.put("/api/studenti/:id", (req, res) => {
+// ── PUT /api/studenti/:id (modifica tipo pagamento)
+app.put("/api/studenti/:id", async (req, res) => {
   const { id } = req.params;
   const { tipo_pagamento, ore_iniziali } = req.body;
   if (!["abbonamento","ore"].includes(tipo_pagamento))
     return res.status(400).json({ errore: "Tipo pagamento non valido" });
   try {
-    const s = db.prepare("SELECT * FROM studenti WHERE id=?").get(id);
-    if (!s) return res.status(404).json({ errore: "Studente non trovato" });
-    const nuoveOre = tipo_pagamento === "abbonamento" ? 0
-      : s.tipo_pagamento === "abbonamento" ? (parseFloat(ore_iniziali) || 0)
-      : s.ore_residue;
-    db.prepare("UPDATE studenti SET tipo_pagamento=?, ore_residue=? WHERE id=?").run(tipo_pagamento, nuoveOre, id);
-    res.json(db.prepare("SELECT * FROM studenti WHERE id=?").get(id));
-  } catch { res.status(500).json({ errore: "Errore nella modifica" }); }
+    const check = await pool.query("SELECT * FROM studenti WHERE id=$1", [id]);
+    if (!check.rows.length) return res.status(404).json({ errore: "Studente non trovato" });
+    const s = check.rows[0];
+    let nuoveOre = parseFloat(s.ore_residue);
+    if (tipo_pagamento === "abbonamento") nuoveOre = 0;
+    else if (s.tipo_pagamento === "abbonamento") nuoveOre = parseFloat(ore_iniziali) || 0;
+    const r = await pool.query(
+      "UPDATE studenti SET tipo_pagamento=$1, ore_residue=$2 WHERE id=$3 RETURNING *",
+      [tipo_pagamento, nuoveOre, id]
+    );
+    res.json(r.rows[0]);
+  } catch (err) { console.error(err); res.status(500).json({ errore: "Errore nella modifica" }); }
 });
 
-app.post("/api/studenti/:id/ore", (req, res) => {
+// ── POST /api/studenti/:id/ore
+app.post("/api/studenti/:id/ore", async (req, res) => {
   const { id } = req.params;
   const { ore } = req.body;
-  if (!ore || ore <= 0)
-    return res.status(400).json({ errore: "Inserire un numero di ore valido (> 0)" });
+  if (!ore || ore <= 0) return res.status(400).json({ errore: "Inserire un numero di ore valido (> 0)" });
   try {
-    const s = db.prepare("SELECT * FROM studenti WHERE id=?").get(id);
-    if (!s) return res.status(404).json({ errore: "Studente non trovato" });
-    if (s.tipo_pagamento !== "ore")
+    const check = await pool.query("SELECT * FROM studenti WHERE id=$1", [id]);
+    if (!check.rows.length) return res.status(404).json({ errore: "Studente non trovato" });
+    if (check.rows[0].tipo_pagamento !== "ore")
       return res.status(400).json({ errore: "Solo studenti a ore possono avere credito ore" });
-    db.prepare("UPDATE studenti SET ore_residue = ore_residue + ? WHERE id=?").run(ore, id);
-    res.json(db.prepare("SELECT * FROM studenti WHERE id=?").get(id));
-  } catch { res.status(500).json({ errore: "Errore nell'aggiunta delle ore" }); }
+    const r = await pool.query(
+      "UPDATE studenti SET ore_residue = ore_residue + $1 WHERE id=$2 RETURNING *",
+      [ore, id]
+    );
+    res.json(r.rows[0]);
+  } catch (err) { console.error(err); res.status(500).json({ errore: "Errore nell'aggiunta delle ore" }); }
 });
 
-// PUT /api/studenti/:id/note — salva le note di uno studente
-app.put("/api/studenti/:id/note", (req, res) => {
+// ── PUT /api/studenti/:id/note
+app.put("/api/studenti/:id/note", async (req, res) => {
   const { id } = req.params;
   const { note } = req.body;
-  if (note === undefined || note === null)
-    return res.status(400).json({ errore: "Campo note mancante" });
+  if (note === undefined || note === null) return res.status(400).json({ errore: "Campo note mancante" });
   try {
-    const s = db.prepare("SELECT * FROM studenti WHERE id=?").get(id);
-    if (!s) return res.status(404).json({ errore: "Studente non trovato" });
-    db.prepare("UPDATE studenti SET note=? WHERE id=?").run(note, id);
-    res.json(db.prepare("SELECT * FROM studenti WHERE id=?").get(id));
-  } catch { res.status(500).json({ errore: "Errore nel salvataggio delle note" }); }
+    const check = await pool.query("SELECT id FROM studenti WHERE id=$1", [id]);
+    if (!check.rows.length) return res.status(404).json({ errore: "Studente non trovato" });
+    const r = await pool.query("UPDATE studenti SET note=$1 WHERE id=$2 RETURNING *", [note, id]);
+    res.json(r.rows[0]);
+  } catch (err) { console.error(err); res.status(500).json({ errore: "Errore nel salvataggio delle note" }); }
 });
 
-// ============================================================
-// PRESENZE
-// ============================================================
-
-app.get("/api/presenze/:studente_id", (req, res) => {
+// ── GET /api/presenze/:studente_id
+app.get("/api/presenze/:studente_id", async (req, res) => {
   const { studente_id } = req.params;
   try {
-    res.json(db.prepare(
-      "SELECT * FROM presenze WHERE studente_id=? ORDER BY ingresso DESC LIMIT 50"
-    ).all(studente_id));
-  } catch { res.status(500).json({ errore: "Errore nel recupero delle presenze" }); }
+    const r = await pool.query(
+      "SELECT * FROM presenze WHERE studente_id=$1 ORDER BY ingresso DESC LIMIT 50",
+      [studente_id]
+    );
+    res.json(r.rows);
+  } catch (err) { console.error(err); res.status(500).json({ errore: "Errore nel recupero delle presenze" }); }
 });
 
-app.post("/api/presenze/ingresso", (req, res) => {
+// ── POST /api/presenze/ingresso
+app.post("/api/presenze/ingresso", async (req, res) => {
   const { studente_id, orario_personalizzato } = req.body;
-  if (!studente_id)
-    return res.status(400).json({ errore: "ID studente obbligatorio" });
+  if (!studente_id) return res.status(400).json({ errore: "ID studente obbligatorio" });
   try {
-    const s = db.prepare("SELECT * FROM studenti WHERE id=?").get(studente_id);
-    if (!s) return res.status(404).json({ errore: "Studente non trovato" });
-    if (db.prepare("SELECT id FROM presenze WHERE studente_id=? AND uscita IS NULL").get(studente_id))
+    const sCheck = await pool.query("SELECT * FROM studenti WHERE id=$1", [studente_id]);
+    if (!sCheck.rows.length) return res.status(404).json({ errore: "Studente non trovato" });
+    const aperta = await pool.query(
+      "SELECT id FROM presenze WHERE studente_id=$1 AND uscita IS NULL", [studente_id]
+    );
+    if (aperta.rows.length)
       return res.status(400).json({ errore: "Lo studente ha già un ingresso registrato. Registrare prima l'uscita." });
-    const ora = orario_personalizzato ? new Date(orario_personalizzato).toISOString() : new Date().toISOString();
-    if (isNaN(new Date(ora).getTime()))
-      return res.status(400).json({ errore: "Orario non valido" });
-    const r = db.prepare("INSERT INTO presenze (studente_id, ingresso) VALUES (?,?)").run(studente_id, ora);
-    res.status(201).json(db.prepare("SELECT * FROM presenze WHERE id=?").get(r.lastInsertRowid));
-  } catch { res.status(500).json({ errore: "Errore nella registrazione dell'ingresso" }); }
+    const ora = orario_personalizzato ? new Date(orario_personalizzato) : new Date();
+    if (isNaN(ora.getTime())) return res.status(400).json({ errore: "Orario non valido" });
+    const r = await pool.query(
+      "INSERT INTO presenze (studente_id, ingresso) VALUES ($1,$2) RETURNING *",
+      [studente_id, ora]
+    );
+    res.status(201).json(r.rows[0]);
+  } catch (err) { console.error(err); res.status(500).json({ errore: "Errore nella registrazione dell'ingresso" }); }
 });
 
-app.post("/api/presenze/uscita", (req, res) => {
+// ── POST /api/presenze/uscita
+app.post("/api/presenze/uscita", async (req, res) => {
   const { studente_id, orario_personalizzato } = req.body;
-  if (!studente_id)
-    return res.status(400).json({ errore: "ID studente obbligatorio" });
+  if (!studente_id) return res.status(400).json({ errore: "ID studente obbligatorio" });
+  const client = await pool.connect();
   try {
-    const s = db.prepare("SELECT * FROM studenti WHERE id=?").get(studente_id);
-    if (!s) return res.status(404).json({ errore: "Studente non trovato" });
-    const aperta = db.prepare("SELECT * FROM presenze WHERE studente_id=? AND uscita IS NULL").get(studente_id);
-    if (!aperta)
-      return res.status(400).json({ errore: "Nessun ingresso registrato per questo studente." });
-    const ora = orario_personalizzato ? new Date(orario_personalizzato).toISOString() : new Date().toISOString();
-    if (isNaN(new Date(ora).getTime()))
-      return res.status(400).json({ errore: "Orario non valido" });
-    if (new Date(ora) <= new Date(aperta.ingresso))
-      return res.status(400).json({ errore: "L'orario di uscita deve essere successivo all'ingresso." });
-    const oreConsumate = Math.round(((new Date(ora) - new Date(aperta.ingresso)) / 3600000) * 100) / 100;
-    db.transaction(() => {
-      db.prepare("UPDATE presenze SET uscita=?, ore_consumate=? WHERE id=?").run(ora, oreConsumate, aperta.id);
-      if (s.tipo_pagamento === "ore")
-        db.prepare("UPDATE studenti SET ore_residue=? WHERE id=?")
-          .run(Math.round(Math.max(0, s.ore_residue - oreConsumate) * 100) / 100, studente_id);
-    })();
-    res.json({
-      presenza: db.prepare("SELECT * FROM presenze WHERE id=?").get(aperta.id),
-      studente: db.prepare("SELECT * FROM studenti WHERE id=?").get(studente_id),
-    });
-  } catch { res.status(500).json({ errore: "Errore nella registrazione dell'uscita" }); }
+    await client.query("BEGIN");
+    const sCheck = await client.query("SELECT * FROM studenti WHERE id=$1", [studente_id]);
+    if (!sCheck.rows.length) { await client.query("ROLLBACK"); return res.status(404).json({ errore: "Studente non trovato" }); }
+    const studente = sCheck.rows[0];
+    const apertaRes = await client.query(
+      "SELECT * FROM presenze WHERE studente_id=$1 AND uscita IS NULL", [studente_id]
+    );
+    if (!apertaRes.rows.length) { await client.query("ROLLBACK"); return res.status(400).json({ errore: "Nessun ingresso registrato per questo studente." }); }
+    const aperta = apertaRes.rows[0];
+    const ora = orario_personalizzato ? new Date(orario_personalizzato) : new Date();
+    if (isNaN(ora.getTime())) { await client.query("ROLLBACK"); return res.status(400).json({ errore: "Orario non valido" }); }
+    if (ora <= new Date(aperta.ingresso)) { await client.query("ROLLBACK"); return res.status(400).json({ errore: "L'orario di uscita deve essere successivo all'ingresso." }); }
+    const oreConsumate = Math.round(((ora - new Date(aperta.ingresso)) / 3600000) * 100) / 100;
+    const presenzaRes = await client.query(
+      "UPDATE presenze SET uscita=$1, ore_consumate=$2 WHERE id=$3 RETURNING *",
+      [ora, oreConsumate, aperta.id]
+    );
+    let studenteAggiornato = studente;
+    if (studente.tipo_pagamento === "ore") {
+      const nuoveOre = Math.max(0, parseFloat(studente.ore_residue) - oreConsumate);
+      const sRes = await client.query(
+        "UPDATE studenti SET ore_residue=$1 WHERE id=$2 RETURNING *",
+        [Math.round(nuoveOre * 100) / 100, studente_id]
+      );
+      studenteAggiornato = sRes.rows[0];
+    }
+    await client.query("COMMIT");
+    res.json({ presenza: presenzaRes.rows[0], studente: studenteAggiornato });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ errore: "Errore nella registrazione dell'uscita" });
+  } finally { client.release(); }
 });
 
-// ============================================================
+// ── AVVIO
 app.listen(PORT, () => {
-  console.log(`✅ Server avviato su http://localhost:${PORT}`);
-  console.log(`📁 Database: asilo.db`);
+  console.log(`Server avviato su http://localhost:${PORT}`);
 });
