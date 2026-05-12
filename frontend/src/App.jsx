@@ -8,7 +8,7 @@ import ModaleNote from "./components/ModaleNote";
 import ModaleModificaStudente from "./components/ModaleModificaStudente";
 import "./App.css";
 
-const API = "http://localhost:3001/api";
+const API = "asilo-app-production.up.railway.app";
 
 export default function App() {
   const [studenti,       setStudenti]       = useState([]);
