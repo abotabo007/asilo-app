@@ -1,4 +1,4 @@
-// src/App.jsx
+// src/App.jsx assdasdasd
 import { useState, useEffect } from "react";
 import StudenteCard from "./components/StudenteCard";
 import ModaleAggiungiStudente from "./components/ModaleAggiungiStudente";
