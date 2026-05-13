@@ -457,6 +457,7 @@ body {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: .02em;
+  white-space: nowrap;
 }
 .badge-abbonamento { background: var(--sky-light); color: var(--sky); border: 1px solid #c5dff2; }
 .badge-ore         { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-mid); }
