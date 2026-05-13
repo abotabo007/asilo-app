@@ -107,7 +107,6 @@ export default function App() {
             <div className="logo-badge">🏫</div>
             <div className="logo-text">
               <h1>Gestione Baby Parking</h1>
-              <p>Sistema presenze</p>
             </div>
           </div>
           <button className="btn btn-primary" onClick={() => setModaleAggiungi(true)}>
