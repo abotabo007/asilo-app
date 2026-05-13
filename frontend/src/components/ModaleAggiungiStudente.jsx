@@ -46,7 +46,7 @@ export default function ModaleAggiungiStudente({ onClose, onSalva }) {
             <div className="radio-group">
               <label className={`radio-card ${form.tipo_pagamento === "abbonamento" ? "selected" : ""}`}>
                 <input type="radio" name="tipo_pagamento" value="abbonamento" checked={form.tipo_pagamento === "abbonamento"} onChange={handleChange} />
-                <span>📅 Abbonamento</span><small>Pagamento fisso mensile</small>
+                <span>📅Abbonamento</span><small>Pagamento fisso mensile</small>
               </label>
               <label className={`radio-card ${form.tipo_pagamento === "ore" ? "selected" : ""}`}>
                 <input type="radio" name="tipo_pagamento" value="ore" checked={form.tipo_pagamento === "ore"} onChange={handleChange} />
