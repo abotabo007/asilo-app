@@ -517,6 +517,22 @@ body {
   align-items: center;
   gap: 6px;
 }
+
+.btn-aggiungi-ore {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px dashed var(--sage-mid);
+  background: var(--sage-light);
+  color: var(--sage-dark);
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-aggiungi-ore:hover { background: var(--sage-mid); }
+
+
 .btn-ingresso:hover:not(:disabled) {
   background: var(--sage-mid);
   border-color: var(--sage);

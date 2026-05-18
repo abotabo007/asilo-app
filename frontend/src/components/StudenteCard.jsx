@@ -62,7 +62,7 @@ export default function StudenteCard({
       {isOre && (
         <div className="aggiungi-ore-section">
           {!addOreMode ? (
-            <button className="btn btn-outline btn-sm" onClick={() => setAddOreMode(true)}>
+            <button className="btn-aggiungi-ore" onClick={() => setAddOreMode(true)}>
               + Aggiungi ore
             </button>
           ) : (
@@ -73,7 +73,7 @@ export default function StudenteCard({
                 onChange={e => setOreInput(e.target.value)}
               />
               <button className="btn btn-success btn-sm" onClick={handleAggiungiOre}>✓</button>
-              <button className="btn btn-outline btn-sm" onClick={() => { setAddOreMode(false); setErrOre(""); setOreInput(""); }}>✕</button>
+              <button className="btn-aggiungi-ore" onClick={() => { setAddOreMode(false); setErrOre(""); setOreInput(""); }}>✕</button>
               {errOre && <span className="errore-inline">{errOre}</span>}
             </div>
           )}
