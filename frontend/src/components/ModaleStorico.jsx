@@ -23,7 +23,9 @@ export default function ModaleStorico({ studente, onClose, api }) {
     return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const totaleOre = presenze.filter(p => p.ore_consumate).reduce((a, p) => a + p.ore_consumate, 0);
+  const totaleOre = presenze
+  .filter(p => p.ore_consumate)
+  .reduce((a, p) => a + parseFloat(p.ore_consumate || 0), 0);
 
   return (
     <div className="modale-overlay" onClick={onClose}>
@@ -65,7 +67,7 @@ export default function ModaleStorico({ studente, onClose, api }) {
                         <td>{fmt(p.ingresso, "data")}</td>
                         <td>{fmt(p.ingresso)}</td>
                         <td>{fmt(p.uscita)}</td>
-                        <td>{p.ore_consumate ? `${p.ore_consumate}h` : "—"}</td>
+                        <td>{p.ore_consumate ? `${parseFloat(p.ore_consumate).toFixed(1)}h` : "—"}</td>
                         <td>
                           {p.uscita
                             ? <span className="badge badge-success">✓ Completata</span>
