@@ -198,62 +198,95 @@ body {
 }
 
 /* === CARD STUDENTE === */
+/* === CARD STUDENTE === */
 .studente-card {
   background: var(--white);
-  border: 1.5px solid var(--cream-border);
+  border: 0.5px solid var(--cream-border);
   border-radius: var(--radius-lg);
-  padding: 22px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
   box-shadow: var(--shadow-sm);
   transition: transform .2s, box-shadow .2s;
   position: relative;
   overflow: hidden;
 }
 
+.studente-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
 .studente-card::before {
   content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: var(--sage-mid);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: block;
+  height: 5px;
+  background: var(--sage);
+  width: 100%;
 }
 
-.studente-card.ore-basse::before { background: var(--amber-mid); }
-.studente-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.studente-card.ore-basse::before { background: var(--amber); }
+
+.card-body {
+  padding: 18px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
 
 .card-header {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  align-items: center;
+  gap: 12px;
 }
 
 .avatar {
-  width: 48px; height: 48px;
+  width: 46px; height: 46px;
   border-radius: 50%;
   background: var(--sage-light);
   color: var(--sage-dark);
   display: flex; align-items: center; justify-content: center;
   font-family: 'Nunito', sans-serif;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   flex-shrink: 0;
   border: 2px solid var(--sage-mid);
 }
 
-.avatar-lg { width: 56px; height: 56px; font-size: 1.1rem; }
+.avatar-ore {
+  background: var(--amber-light);
+  color: var(--amber);
+  border-color: var(--amber-mid);
+}
 
 .card-info { flex: 1; min-width: 0; }
 .card-info h3 {
   font-family: 'Nunito', sans-serif;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 800;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  margin-top: 4px;
+  background: var(--sage-light);
+  color: var(--sage-dark);
+  border: 1px solid var(--sage-mid);
+}
+
+.badge-ore {
+  background: var(--amber-light);
+  color: var(--amber);
+  border-color: var(--amber-mid);
 }
 
 .card-actions-top {
@@ -262,67 +295,139 @@ body {
   flex-shrink: 0;
 }
 
-/* === ORE DISPLAY === */
+.btn-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 0.5px solid var(--cream-border);
+  background: var(--cream-dark);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-mid);
+  transition: background .15s;
+}
+.btn-icon:hover { background: var(--cream-border); }
+.btn-danger-icon { color: var(--coral); }
+
+.card-divider {
+  height: 0.5px;
+  background: var(--cream-border);
+}
+
 .ore-display {
   display: flex;
   align-items: center;
-  padding: 14px 16px;
-  background: var(--sage-light);
-  border-radius: var(--radius);
-  border: 1.5px solid var(--sage-mid);
   gap: 10px;
-}
-
-.ore-display.ore-warning {
   background: var(--amber-light);
-  border-color: var(--amber-mid);
+  border: 1px solid var(--amber-mid);
+  border-radius: 10px;
+  padding: 10px 14px;
 }
 
-.ore-icon { font-size: 1.3rem; }
+.ore-display.ore-warning { border-color: var(--coral-mid); background: var(--coral-light); }
+
+.ore-icon { font-size: 1.2rem; }
+
 .ore-info { flex: 1; }
-.ore-label { font-size: 0.72rem; color: var(--text-soft); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; display: block; }
-.ore-value {
-  font-family: 'Nunito', sans-serif;
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: var(--sage-dark);
-  line-height: 1.1;
-}
-.ore-display.ore-warning .ore-value { color: var(--amber); }
-.ore-alert { font-size: 0.72rem; color: var(--amber); font-weight: 700; }
 
-/* Aggiungi ore */
-.aggiungi-ore-section { display: flex; align-items: center; }
-
-.ore-input-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.errore-inline {
-  font-size: 0.75rem;
-  color: var(--coral);
-  margin-top: 4px;
+.ore-label {
+  font-size: 0.7rem;
+  color: var(--amber);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   display: block;
-  width: 100%;
 }
 
-/* Card meta */
+.ore-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.ore-alert {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--coral);
+  background: var(--coral-light);
+  border-radius: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--coral-mid);
+}
+
+.note-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--cream-dark);
+  border: 0.5px solid var(--cream-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--text-mid);
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background .15s;
+}
+.note-preview:hover { background: var(--cream-border); }
+.note-preview.has-note { color: var(--text); }
+
 .card-meta {
-  font-size: 0.8rem;
-  color: var(--text-soft);
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-soft);
 }
 
-/* Card actions bottom */
-.card-actions {
+.card-footer {
+  padding: 12px 18px;
+  background: var(--cream-dark);
+  border-top: 0.5px solid var(--cream-border);
   display: flex;
-  gap: 10px;
-  margin-top: 2px;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-primary-teal {
+  flex: 1;
+  padding: 10px 0;
+  background: var(--sage);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background .15s;
+}
+.btn-primary-teal:hover { background: var(--sage-dark); }
+
+.btn-outline {
+  background: var(--white);
+  border: 0.5px solid var(--cream-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-outline:hover { background: var(--cream-dark); }
+
+.btn-sm {
+  width: 38px; height: 38px;
+  padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 /* === BOTTONI === */

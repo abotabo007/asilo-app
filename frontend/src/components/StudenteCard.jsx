@@ -23,10 +23,14 @@ export default function StudenteCard({
   };
 
   return (
-    <div className={`studente-card ${oreBasse ? "ore-basse" : ""}`}>
+  <div className={`studente-card ${oreBasse ? "ore-basse" : ""}`}>
+
+    <div className="card-body">
       {/* Header */}
       <div className="card-header">
-        <div className="avatar">{studente.nome[0]}{studente.cognome[0]}</div>
+        <div className={`avatar ${studente.tipo_pagamento === "ore" ? "avatar-ore" : ""}`}>
+          {studente.nome[0]}{studente.cognome[0]}
+        </div>
         <div className="card-info">
           <h3>{studente.nome} {studente.cognome}</h3>
           <span className={`badge badge-${studente.tipo_pagamento}`}>
@@ -34,11 +38,13 @@ export default function StudenteCard({
           </span>
         </div>
         <div className="card-actions-top">
-          <button className="btn-icon" onClick={onNote}     title="Note">📝</button>
-          <button className="btn-icon" onClick={onModifica} title="Modifica tipo pagamento">✏️</button>
+          <button className="btn-icon" onClick={onNote} title="Note">📝</button>
+          <button className="btn-icon" onClick={onModifica} title="Modifica">✏️</button>
           <button className="btn-icon btn-danger-icon" onClick={onElimina} title="Elimina">🗑</button>
         </div>
       </div>
+
+      <div className="card-divider" />
 
       {/* Ore residue */}
       {isOre && (
@@ -74,11 +80,10 @@ export default function StudenteCard({
         </div>
       )}
 
-      {/* Anteprima nota */}
+      {/* Nota */}
       <div
         className={`note-preview ${haNota ? "has-note" : ""}`}
         onClick={onNote}
-        style={{ cursor: "pointer" }}
         title="Clicca per modificare le note"
       >
         {haNota ? `📝 ${studente.note}` : "📝 Nessuna nota — clicca per aggiungere"}
@@ -89,16 +94,18 @@ export default function StudenteCard({
         <span>📋</span>
         <span>{studente.totale_presenze} presenze registrate</span>
       </div>
-
-      {/* Azioni */}
-      <div className="card-actions">
-        <button className="btn btn-primary-teal" style={{ flex: 1 }} onClick={onPresenza}>
-          ⏰ Entrata / Uscita
-        </button>
-        <button className="btn btn-outline btn-sm" onClick={onStorico} title="Storico presenze">
-          📋
-        </button>
-      </div>
     </div>
+
+    {/* Footer */}
+    <div className="card-footer">
+      <button className="btn-primary-teal" onClick={onPresenza}>
+        ⏰ Entrata / Uscita
+      </button>
+      <button className="btn-outline btn-sm" onClick={onStorico} title="Storico presenze">
+        📋
+      </button>
+    </div>
+
+  </div>
   );
 }
